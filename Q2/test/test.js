@@ -35,23 +35,33 @@ describe("HelloWorld", function () {
 
     it("Should return true for correct proof", async function () {
         //[assignment] Add comments to explain what each line is doing
+
+
+        // wait for signal from fullProve to create the proof
         const { proof, publicSignals } = await groth16.fullProve({"a":"1","b":"2"}, "contracts/circuits/HelloWorld/HelloWorld_js/HelloWorld.wasm","contracts/circuits/HelloWorld/circuit_final.zkey");
 
+        //log the public signals. 
         console.log('1x2 =',publicSignals[0]);
-
+        // convert strings into big integers and store in const variables for publicSignals and proof.
         const editedPublicSignals = unstringifyBigInts(publicSignals);
         const editedProof = unstringifyBigInts(proof);
+
+        //Call data from groth16.
         const calldata = await groth16.exportSolidityCallData(editedProof, editedPublicSignals);
     
+        //Map elements in calldata to const argv.
         const argv = calldata.replace(/["[\]\s]/g, "").split(',').map(x => BigInt(x).toString());
     
+        //Map data from argv to const a,b,c,input. 
         const a = [argv[0], argv[1]];
         const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
         const c = [argv[6], argv[7]];
         const Input = argv.slice(8);
 
+        //Verify the proof.
         expect(await verifier.verifyProof(a, b, c, Input)).to.be.true;
     });
+    //return false for invalid proof
     it("Should return false for invalid proof", async function () {
         let a = [0, 0];
         let b = [[0, 0], [0, 0]];
@@ -66,6 +76,9 @@ describe("Multiplier3 with Groth16", function () {
 
     beforeEach(async function () {
         //[assignment] insert your script here
+        Verifier = await ethers.getContractFactory("contracts/Multiplier3Verifier.sol:Multiplier3Verifier");
+		verifier = await Verifier.deploy();
+		await verifier.deployed();
     });
 
     it("Should return true for correct proof", async function () {
